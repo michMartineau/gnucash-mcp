@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:mcp-go.dev)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(go list:*)",
+      "Bash(go mod init:*)",
+      "Bash(go mod tidy:*)",
+      "Bash(go build:*)",
+      "Bash(timeout 5:*)"
+    ]
+  },
+  "outputStyle": "Explanatory"
+}
