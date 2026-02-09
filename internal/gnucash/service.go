@@ -116,7 +116,7 @@ func (s *Service) GetBalance(ctx context.Context, accountName, date string) (str
 		dateLabel = "as of " + date
 	}
 
-	return fmt.Sprintf("Account: %s [%s]\nBalance (%s): %s EUR", account.Name, account.AccountType, dateLabel, balance), nil
+	return fmt.Sprintf("Account: %s [%s]\nBalance (%s): %s EUR", account.FullName, account.AccountType, dateLabel, balance), nil
 }
 
 // GetTransactions returns transactions for a named account within a date range.
