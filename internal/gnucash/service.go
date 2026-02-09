@@ -79,17 +79,10 @@ func (s *Service) resolveAccount(ctx context.Context, name string) (*Account, er
 		return nil, fmt.Errorf("no account found matching '%s'", name)
 	}
 
-	// Check for exact match first (case-insensitive)
-	for i, a := range accounts {
-		if strings.EqualFold(a.Name, name) {
-			return &accounts[i], nil
-		}
-	}
-
 	if len(accounts) > 1 {
 		names := make([]string, len(accounts))
 		for i, a := range accounts {
-			names[i] = fmt.Sprintf("  - %s [%s]", a.Name, a.AccountType)
+			names[i] = fmt.Sprintf("  - %s [%s]", a.FullName, a.AccountType)
 		}
 		return nil, fmt.Errorf("multiple accounts match '%s':\n%s\nPlease be more specific.", name, strings.Join(names, "\n"))
 	}
