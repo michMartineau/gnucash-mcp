@@ -38,33 +38,6 @@ func (s *Service) ListAccounts(ctx context.Context, accountType string) (string,
 	return result, nil
 }
 
-func printAccountTree(sb *strings.Builder, a *Account, depth int, filterType string) {
-	if filterType != "" && !strings.EqualFold(a.AccountType, filterType) {
-		// Still recurse into children — they might match
-		for _, child := range a.Children {
-			printAccountTree(sb, child, depth, filterType)
-		}
-		return
-	}
-
-	indent := strings.Repeat("  ", depth)
-	typeLabel := ""
-	if a.AccountType != "" && a.AccountType != "ROOT" {
-		typeLabel = fmt.Sprintf(" [%s]", a.AccountType)
-	}
-	if a.AccountType == "ROOT" && depth == 0 {
-		// Skip printing ROOT, but show children
-		for _, child := range a.Children {
-			printAccountTree(sb, child, depth, filterType)
-		}
-		return
-	}
-	fmt.Fprintf(sb, "%s• %s%s\n", indent, a.Name, typeLabel)
-	for _, child := range a.Children {
-		printAccountTree(sb, child, depth+1, filterType)
-	}
-}
-
 // resolveAccount finds a single account by name. Returns an error if no match or ambiguous.
 func (s *Service) resolveAccount(ctx context.Context, name string) (*Account, error) {
 	accounts, err := s.db.FindAccountsByName(ctx, name)
