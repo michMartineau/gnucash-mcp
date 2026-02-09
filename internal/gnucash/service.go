@@ -59,10 +59,10 @@ func (s *Service) ListAccounts(ctx context.Context, accountType string) (string,
 // resolveAccount finds a single account by name. Returns an error if no match or ambiguous.
 func (s *Service) resolveAccount(ctx context.Context, name string) (*Account, error) {
 	mAccount, err := s.db.GetAllAccounts(ctx) // TODO: cache
+	if err != nil {
+		return nil, err
+	}
 	if strings.Contains(name, ":") {
-		if err != nil {
-			return nil, err
-		}
 		for _, acc := range mAccount {
 			if acc.FullName == name {
 				return acc, nil
