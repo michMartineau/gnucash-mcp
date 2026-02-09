@@ -28,7 +28,7 @@ func (s *Service) ListAccounts(ctx context.Context, accountType string) (string,
 	// Format output
 	var sb strings.Builder
 	for _, acc := range accounts {
-		fmt.Fprintf(&sb, "%s\t%s%i\n", acc.FullName, acc.AccountType)
+		fmt.Fprintf(&sb, "%s\t%s\n", acc.FullName, acc.AccountType)
 	}
 
 	result := sb.String()
