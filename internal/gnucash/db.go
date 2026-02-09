@@ -35,7 +35,7 @@ func (d *DB) Close() error {
 }
 
 // GetAllAccounts returns all accounts from the database.
-func (d *DB) GetAllAccounts(ctx context.Context) ([]Account, error) {
+func (d *DB) GetAllAccounts(ctx context.Context) (map[string]*Account, error) {
 	rows, err := d.db.QueryContext(ctx, `
 		SELECT c.guid, c.name, c.account_type,
 			   COALESCE(c.parent_guid, ''),
@@ -50,18 +50,36 @@ func (d *DB) GetAllAccounts(ctx context.Context) ([]Account, error) {
 	}
 	defer rows.Close()
 
-	var accounts []Account
+	accounts := make(map[string]*Account)
 	for rows.Next() {
-		var a Account
+		acc := &Account{}
 		var hidden, placeholder int
-		if err := rows.Scan(&a.GUID, &a.Name, &a.AccountType, &a.ParentGUID, &a.Description, &hidden, &placeholder); err != nil {
+		if err := rows.Scan(&acc.GUID, &acc.Name, &acc.AccountType, &acc.ParentGUID, &acc.Description, &hidden, &placeholder); err != nil {
 			return nil, fmt.Errorf("scan account: %w", err)
 		}
-		a.Hidden = hidden != 0
-		a.Placeholder = placeholder != 0
-		accounts = append(accounts, a)
+		acc.Hidden = hidden != 0
+		acc.Placeholder = placeholder != 0
+		accounts[acc.GUID] = acc
 	}
+	for _, acc := range accounts {
+		acc.FullName = buildPath(acc, accounts)
+	}
+
 	return accounts, rows.Err()
+}
+
+func buildPath(acc *Account, index map[string]*Account) string {
+	parts := []string{acc.Name}
+	current := acc
+	for {
+		parent, ok := index[current.ParentGUID]
+		if !ok || parent.AccountType == "ROOT" {
+			break
+		}
+		parts = append([]string{parent.Name}, parts...)
+		current = parent
+	}
+	return strings.Join(parts, ":")
 }
 
 // FindAccountsByName returns accounts matching a case-insensitive name pattern.

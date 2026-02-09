@@ -25,33 +25,10 @@ func (s *Service) ListAccounts(ctx context.Context, accountType string) (string,
 		return "", err
 	}
 
-	// Build lookup maps
-	byGUID := make(map[string]*Account)
-	for i := range accounts {
-		byGUID[accounts[i].GUID] = &accounts[i]
-	}
-
-	// Build tree
-	var roots []*Account
-	for i := range accounts {
-		a := &accounts[i]
-		if a.ParentGUID == "" || byGUID[a.ParentGUID] == nil {
-			roots = append(roots, a)
-		} else {
-			parent := byGUID[a.ParentGUID]
-			parent.Children = append(parent.Children, a)
-		}
-	}
-
-	// Build full names
-	for _, root := range roots {
-		buildFullNames(root, "")
-	}
-
 	// Format output
 	var sb strings.Builder
-	for _, root := range roots {
-		printAccountTree(&sb, root, 0, accountType)
+	for _, acc := range accounts {
+		fmt.Fprintf(&sb, "%s\t%s%i\n", acc.FullName, acc.AccountType, acc.)
 	}
 
 	result := sb.String()
@@ -59,17 +36,6 @@ func (s *Service) ListAccounts(ctx context.Context, accountType string) (string,
 		return "No accounts found.", nil
 	}
 	return result, nil
-}
-
-func buildFullNames(a *Account, prefix string) {
-	if prefix == "" {
-		a.FullName = a.Name
-	} else {
-		a.FullName = prefix + ":" + a.Name
-	}
-	for _, child := range a.Children {
-		buildFullNames(child, a.FullName)
-	}
 }
 
 func printAccountTree(sb *strings.Builder, a *Account, depth int, filterType string) {
