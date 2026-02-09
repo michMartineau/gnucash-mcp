@@ -1,8 +1,11 @@
 package gnucash
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -25,9 +28,12 @@ func (s *Service) ListAccounts(ctx context.Context, accountType string) (string,
 		return "", err
 	}
 
+	values := slices.SortedFunc(maps.Values(accounts), func(a, b *Account) int {
+		return cmp.Compare(a.FullName, b.FullName)
+	})
 	// Format output
 	var sb strings.Builder
-	for _, acc := range accounts {
+	for _, acc := range values {
 		fmt.Fprintf(&sb, "%s\t%s\n", acc.FullName, acc.AccountType)
 	}
 
