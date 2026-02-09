@@ -37,12 +37,13 @@ func (d *DB) Close() error {
 // GetAllAccounts returns all accounts from the database.
 func (d *DB) GetAllAccounts(ctx context.Context) ([]Account, error) {
 	rows, err := d.db.QueryContext(ctx, `
-		SELECT guid, name, account_type,
-		       COALESCE(parent_guid, ''),
-		       COALESCE(description, ''),
-		       hidden, placeholder
-		FROM accounts
-		ORDER BY name
+		SELECT c.guid, c.name, c.account_type,
+			   COALESCE(c.parent_guid, ''),
+			   COALESCE(c.description, ''),
+			   c.hidden, c.placeholder
+		FROM accounts c inner join accounts p on c.parent_guid = p.guid
+		WHERE c.parent_guid IS NOT NULL AND p.name != 'Template Root'
+		ORDER BY c.name;
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("query accounts: %w", err)
