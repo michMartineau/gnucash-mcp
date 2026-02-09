@@ -58,12 +58,12 @@ func (s *Service) ListAccounts(ctx context.Context, accountType string) (string,
 
 // resolveAccount finds a single account by name. Returns an error if no match or ambiguous.
 func (s *Service) resolveAccount(ctx context.Context, name string) (*Account, error) {
+	mAccount, err := s.db.GetAllAccounts(ctx) // TODO: cache
 	if strings.Contains(name, ":") {
-		accounts, err := s.db.GetAllAccounts(ctx) // TODO: cache
 		if err != nil {
 			return nil, err
 		}
-		for _, acc := range accounts {
+		for _, acc := range mAccount {
 			if acc.FullName == name {
 				return acc, nil
 			}
@@ -82,7 +82,7 @@ func (s *Service) resolveAccount(ctx context.Context, name string) (*Account, er
 	if len(accounts) > 1 {
 		names := make([]string, len(accounts))
 		for i, a := range accounts {
-			names[i] = fmt.Sprintf("  - %s [%s]", a.FullName, a.AccountType)
+			names[i] = fmt.Sprintf("  - %s [%s]", mAccount[a.GUID].FullName, a.AccountType)
 		}
 		return nil, fmt.Errorf("multiple accounts match '%s':\n%s\nPlease be more specific.", name, strings.Join(names, "\n"))
 	}
