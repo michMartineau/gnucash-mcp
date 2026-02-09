@@ -226,7 +226,11 @@ func (d *DB) GetBalanceForAccount(ctx context.Context, accountGUID string, endDa
 }
 
 func (d *DB) loadBalances(ctx context.Context) (map[string]float64, error) {
-	query := `SELECT account_guid, SUM(value_num/value_denom) FROM splits GROUP BY account_guid`
+	query := `
+		SELECT account_guid, ROUND(SUM(CAST(value_num AS REAL) / value_denom), 2) 
+		FROM splits 
+		GROUP BY account_guid
+	`
 	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("query balances: %w", err)

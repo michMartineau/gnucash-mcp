@@ -27,18 +27,26 @@ func (s *Service) ListAccounts(ctx context.Context, accountType string) (string,
 	if err != nil {
 		return "", err
 	}
-
-	values := slices.SortedFunc(maps.Values(accounts), func(a, b *Account) int {
-		return cmp.Compare(a.FullName, b.FullName)
-	})
 	balances, err := s.db.loadBalances(ctx)
 	if err != nil {
 		return "", err
 	}
+
+	values := slices.Collect(maps.Values(accounts))
+	if accountType != "" {
+		values = slices.DeleteFunc(values, func(a *Account) bool {
+			return a.AccountType != accountType
+		})
+	}
+
+	slices.SortFunc(values, func(a, b *Account) int {
+		return cmp.Compare(a.FullName, b.FullName)
+	})
+
 	// Format output
 	var sb strings.Builder
 	for _, acc := range values {
-		fmt.Fprintf(&sb, "%s\t%s\t%f\n", acc.FullName, acc.AccountType, balances[acc.GUID])
+		fmt.Fprintf(&sb, "%s\t%s\t%.2f\n", acc.FullName, acc.AccountType, balances[acc.GUID])
 	}
 
 	result := sb.String()
