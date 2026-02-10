@@ -84,7 +84,7 @@ func (s *Service) resolveAccount(ctx context.Context, name string) (*Account, er
 		for i, a := range accounts {
 			names[i] = fmt.Sprintf("  - %s [%s]", mAccount[a.GUID].FullName, a.AccountType)
 		}
-		return nil, fmt.Errorf("multiple accounts match '%s':\n%s\nPlease be more specific.", name, strings.Join(names, "\n"))
+		return nil, fmt.Errorf("multiple accounts match '%s':\n%s\nPlease be more specific", name, strings.Join(names, "\n"))
 	}
 
 	return &accounts[0], nil
