@@ -1,8 +1,11 @@
 package gnucash
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -24,11 +27,26 @@ func (s *Service) ListAccounts(ctx context.Context, accountType string) (string,
 	if err != nil {
 		return "", err
 	}
+	balances, err := s.db.loadBalances(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	values := slices.Collect(maps.Values(accounts))
+	if accountType != "" {
+		values = slices.DeleteFunc(values, func(a *Account) bool {
+			return a.AccountType != accountType
+		})
+	}
+
+	slices.SortFunc(values, func(a, b *Account) int {
+		return cmp.Compare(a.FullName, b.FullName)
+	})
 
 	// Format output
 	var sb strings.Builder
-	for _, acc := range accounts {
-		fmt.Fprintf(&sb, "%s\t%s\n", acc.FullName, acc.AccountType)
+	for _, acc := range values {
+		fmt.Fprintf(&sb, "%s\t%s\t%.2f\n", acc.FullName, acc.AccountType, balances[acc.GUID])
 	}
 
 	result := sb.String()
@@ -40,6 +58,19 @@ func (s *Service) ListAccounts(ctx context.Context, accountType string) (string,
 
 // resolveAccount finds a single account by name. Returns an error if no match or ambiguous.
 func (s *Service) resolveAccount(ctx context.Context, name string) (*Account, error) {
+	mAccount, err := s.db.GetAllAccounts(ctx) // TODO: cache
+	if err != nil {
+		return nil, err
+	}
+	if strings.Contains(name, ":") {
+		for _, acc := range mAccount {
+			if acc.FullName == name {
+				return acc, nil
+			}
+		}
+		return nil, fmt.Errorf("no account found matching '%s'", name)
+	}
+
 	accounts, err := s.db.FindAccountsByName(ctx, name)
 	if err != nil {
 		return nil, err
@@ -48,17 +79,10 @@ func (s *Service) resolveAccount(ctx context.Context, name string) (*Account, er
 		return nil, fmt.Errorf("no account found matching '%s'", name)
 	}
 
-	// Check for exact match first (case-insensitive)
-	for i, a := range accounts {
-		if strings.EqualFold(a.Name, name) {
-			return &accounts[i], nil
-		}
-	}
-
 	if len(accounts) > 1 {
 		names := make([]string, len(accounts))
 		for i, a := range accounts {
-			names[i] = fmt.Sprintf("  - %s [%s]", a.Name, a.AccountType)
+			names[i] = fmt.Sprintf("  - %s [%s]", mAccount[a.GUID].FullName, a.AccountType)
 		}
 		return nil, fmt.Errorf("multiple accounts match '%s':\n%s\nPlease be more specific.", name, strings.Join(names, "\n"))
 	}
@@ -85,7 +109,7 @@ func (s *Service) GetBalance(ctx context.Context, accountName, date string) (str
 		dateLabel = "as of " + date
 	}
 
-	return fmt.Sprintf("Account: %s [%s]\nBalance (%s): %s EUR", account.Name, account.AccountType, dateLabel, balance), nil
+	return fmt.Sprintf("Account: %s [%s]\nBalance (%s): %s EUR", account.FullName, account.AccountType, dateLabel, balance), nil
 }
 
 // GetTransactions returns transactions for a named account within a date range.

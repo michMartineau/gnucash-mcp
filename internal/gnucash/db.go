@@ -225,6 +225,30 @@ func (d *DB) GetBalanceForAccount(ctx context.Context, accountGUID string, endDa
 	return num, denom, nil
 }
 
+func (d *DB) loadBalances(ctx context.Context) (map[string]float64, error) {
+	query := `
+		SELECT account_guid, ROUND(SUM(CAST(value_num AS REAL) / value_denom), 2) 
+		FROM splits 
+		GROUP BY account_guid
+	`
+	rows, err := d.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("query balances: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[string]float64)
+	for rows.Next() {
+		var accGUID string
+		var balance float64
+		if err := rows.Scan(&accGUID, &balance); err != nil {
+			return nil, err
+		}
+		result[accGUID] = balance
+	}
+	return result, nil
+}
+
 // SearchTransactions searches transaction descriptions and split memos.
 func (d *DB) SearchTransactions(ctx context.Context, query string, limit int) ([]Transaction, error) {
 	pattern := "%" + strings.ToLower(query) + "%"
